@@ -107,10 +107,21 @@ def data_partition(fname):
 # TODO: merge evaluate functions for test and val set
 # evaluate on test set
 def evaluate(model, dataset, args):
+    '''
+    Made changes to incorporate k of value [1, 5, 10]
+    '''
+
     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
 
-    NDCG = 0.0
-    HT = 0.0
+    NDCG_1 = 0.0
+    HT_1 = 0.0
+
+    NDCG_5 = 0.0
+    HT_5 = 0.0
+
+    NDCG_10 = 0.0
+    HT_10 = 0.0
+
     valid_user = 0.0
 
     if usernum>10000:
@@ -125,13 +136,16 @@ def evaluate(model, dataset, args):
         idx = args.maxlen - 1
         seq[idx] = valid[u][0]
         idx -= 1
+
         for i in reversed(train[u]):
             seq[idx] = i
             idx -= 1
             if idx == -1: break
+
         rated = set(train[u])
         rated.add(0)
         item_idx = [test[u][0]]
+
         for _ in range(100):
             t = np.random.randint(1, itemnum + 1)
             while t in rated: t = np.random.randint(1, itemnum + 1)
@@ -144,23 +158,44 @@ def evaluate(model, dataset, args):
 
         valid_user += 1
 
+        if rank < 1:
+            NDCG_1 += 1 / np.log2(rank + 2)
+            HT_1 += 1
+
+        if rank < 5:
+            NDCG_5 += 1 / np.log2(rank + 2)
+            HT_5 += 1
+
         if rank < 10:
-            NDCG += 1 / np.log2(rank + 2)
-            HT += 1
+            NDCG_10 += 1 / np.log2(rank + 2)
+            HT_10 += 1
+
         if valid_user % 100 == 0:
             print('.', end="")
             sys.stdout.flush()
 
-    return NDCG / valid_user, HT / valid_user
+    return [NDCG_1 / valid_user, NDCG_5 / valid_user, NDCG_10 / valid_user], [HT_1 / valid_user, HT_5 / valid_user, HT_10 / valid_user]
 
 
 # evaluate on val set
 def evaluate_valid(model, dataset, args):
+    '''
+    Made changes to incorporate k of value [1, 5, 10]
+    '''
+
     [train, valid, test, usernum, itemnum] = copy.deepcopy(dataset)
 
-    NDCG = 0.0
+    NDCG_1 = 0.0
+    HT_1 = 0.0
+
+    NDCG_5 = 0.0
+    HT_5 = 0.0
+
+    NDCG_10 = 0.0
+    HT_10 = 0.0
+
     valid_user = 0.0
-    HT = 0.0
+
     if usernum>10000:
         users = random.sample(range(1, usernum + 1), 10000)
     else:
@@ -189,12 +224,22 @@ def evaluate_valid(model, dataset, args):
         rank = predictions.argsort().argsort()[0].item()
 
         valid_user += 1
+        if rank < 1:
+            NDCG_1 += 1 / np.log2(rank + 2)
+            HT_1 += 1
+
+        if rank < 5:
+            NDCG_5 += 1 / np.log2(rank + 2)
+            HT_5 += 1
 
         if rank < 10:
-            NDCG += 1 / np.log2(rank + 2)
-            HT += 1
+            NDCG_10 += 1 / np.log2(rank + 2)
+            HT_10 += 1
+
         if valid_user % 100 == 0:
             print('.', end="")
             sys.stdout.flush()
 
-    return NDCG / valid_user, HT / valid_user
+    return [NDCG_1 / valid_user, NDCG_5 / valid_user, NDCG_10 / valid_user], [HT_1 / valid_user, HT_5 / valid_user,
+                                                                              HT_10 / valid_user]
+

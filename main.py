@@ -14,12 +14,12 @@ def str2bool(s):
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset', required=True)
 parser.add_argument('--train_dir', required=True)
-parser.add_argument('--batch_size', default=128, type=int)
+parser.add_argument('--batch_size', default=512, type=int)
 parser.add_argument('--lr', default=0.001, type=float)
 parser.add_argument('--maxlen', default=50, type=int)
 parser.add_argument('--hidden_units', default=50, type=int)
 parser.add_argument('--num_blocks', default=2, type=int)
-parser.add_argument('--num_epochs', default=201, type=int)
+parser.add_argument('--num_epochs', default=101, type=int)
 parser.add_argument('--num_heads', default=1, type=int)
 parser.add_argument('--dropout_rate', default=0.5, type=float)
 parser.add_argument('--l2_emb', default=0.0, type=float)
@@ -77,7 +77,10 @@ if __name__ == '__main__':
     if args.inference_only:
         model.eval()
         t_test = evaluate(model, dataset, args)
-        print('test (NDCG@10: %.4f, HR@10: %.4f)' % (t_test[0], t_test[1]))
+        NDCG1, NDCG5, NDCG10 = t_test[0]
+        HR1, HR5, HR10 = t_test[1]
+        print('test (NDCG@1: %.4f, NDCG@5: %.4f, NDCG@10: %.4f, HR@1: %.4f, HR@5: %.4f, HR@10: %.4f)' % (
+            NDCG1, NDCG5, NDCG10, HR1, HR5, HR10))
     
     # ce_criterion = torch.nn.CrossEntropyLoss()
     # https://github.com/NVIDIA/pix2pixHD/issues/9 how could an old bug appear again...
@@ -102,18 +105,33 @@ if __name__ == '__main__':
             for param in model.item_emb.parameters(): loss += args.l2_emb * torch.norm(param)
             loss.backward()
             adam_optimizer.step()
-            print("loss in epoch {} iteration {}: {}".format(epoch, step, loss.item())) # expected 0.4~0.6 after init few epochs
+            #print("loss in epoch {} iteration {}: {}".format(epoch, step, loss.item())) # expected 0.4~0.6 after init few epochs
     
-        if epoch % 20 == 0:
+        if epoch % 5 == 0 or  epoch == args.num_epochs:
             model.eval()
             t1 = time.time() - t0
             T += t1
             print('Evaluating', end='')
-            t_test = evaluate(model, dataset, args)
+
             t_valid = evaluate_valid(model, dataset, args)
-            print('epoch:%d, time: %f(s), valid (NDCG@10: %.4f, HR@10: %.4f), test (NDCG@10: %.4f, HR@10: %.4f)'
-                    % (epoch, T, t_valid[0], t_valid[1], t_test[0], t_test[1]))
-    
+            NDCG1, NDCG5, NDCG10 = t_valid[0]
+            HR1, HR5, HR10 = t_valid[1]
+            print('epoch:%d, time: %f(s), valid (NDCG@1: %.4f, NDCG@5: %.4f, NDCG@10: %.4f, HR@1: %.4f, HR@5: %.4f, HR@10: %.4f)'
+                  % (epoch, T, NDCG1, NDCG5, NDCG10, HR1, HR5, HR10))
+
+            t_test = evaluate(model, dataset, args)
+            NDCG1, NDCG5, NDCG10 = t_test[0]
+            HR1, HR5, HR10 = t_test[1]
+            print('epoch:%d, time: %f(s), test (NDCG@1: %.4f, NDCG@5: %.4f, NDCG@10: %.4f, HR@1: %.4f, HR@5: %.4f, HR@10: %.4f)'
+                  % (epoch, T, NDCG1, NDCG5, NDCG10, HR1, HR5, HR10))
+
+
+            folder = args.dataset + '_' + args.train_dir
+            fname = 'SASRec.epoch={}.lr={}.layer={}.head={}.hidden={}.maxlen={}.pth'
+            fname = fname.format(args.num_epochs, args.lr, args.num_blocks, args.num_heads, args.hidden_units,
+                                 args.maxlen)
+            torch.save(model.state_dict(), os.path.join(folder, fname))
+
             f.write(str(t_valid) + ' ' + str(t_test) + '\n')
             f.flush()
             t0 = time.time()
