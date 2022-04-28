@@ -1,3 +1,17 @@
+update for 6240
+
+In order to run the script and to get the results simply run 
+
+```
+python main.py --device=cuda --dataset={} --train_dir=default --maxlen=250 --dropout_rate=0.25 --device=cuda
+
+```
+
+where dataset names such as Movies_and_TV_pre or Video_Games_prep are passed into {}
+
+---
+
+
 update, with few lines of manually initialization code added, it converges as fast as tf version. BTW, I strongly recommend checking issues of the repo from time to time for knowing new updates and details :)
 
 ---
