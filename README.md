@@ -1,5 +1,7 @@
 update for 6240
 
+Before running the script, please download the data from https://gatech.box.com/s/ccti091xs9959og5829v2zslw1k9wznw named Movies_and_TV_prep.txt and Video_Games_prep.txt and adding those files to the folder called data. 
+
 In order to run the script and to get the results simply run 
 
 ```
